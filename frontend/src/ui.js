@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import ReactFlow, { Controls, Background, MiniMap } from 'reactflow';
+import ReactFlow, { Controls, Background, MiniMap, ReactFlowProvider } from 'reactflow';
 import { useStore } from './store';
 import { shallow } from 'zustand/shallow';
 import { InputNode } from './nodes/inputNode';
@@ -12,6 +12,7 @@ import { ConditionNode } from './nodes/conditionNode';
 import { TransformNode } from './nodes/transformNode';
 import { NotificationNode } from './nodes/notificationNode';
 import { DraggableEdge } from './nodes/DraggableEdge';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 import 'reactflow/dist/style.css';
 
@@ -43,7 +44,7 @@ const selector = (state) => ({
   onConnect: state.onConnect,
 });
 
-export const PipelineUI = () => {
+const CanvasInner = () => {
     const reactFlowWrapper = useRef(null);
     const [reactFlowInstance, setReactFlowInstance] = useState(null);
     const {
@@ -56,24 +57,21 @@ export const PipelineUI = () => {
       onConnect
     } = useStore(selector, shallow);
 
+    useKeyboardShortcuts();
+
     const getInitNodeData = (nodeID, type) => {
-      let nodeData = { id: nodeID, nodeType: `${type}` };
-      return nodeData;
+      return { id: nodeID, nodeType: type };
     }
 
     const onDrop = useCallback(
         (event) => {
           event.preventDefault();
-    
           const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
           if (event?.dataTransfer?.getData('application/reactflow')) {
             const appData = JSON.parse(event.dataTransfer.getData('application/reactflow'));
             const type = appData?.nodeType;
-      
-            if (typeof type === 'undefined' || !type) {
-              return;
-            }
-      
+            if (typeof type === 'undefined' || !type) return;
+
             const position = reactFlowInstance.project({
               x: event.clientX - reactFlowBounds.left,
               y: event.clientY - reactFlowBounds.top,
@@ -86,7 +84,6 @@ export const PipelineUI = () => {
               position,
               data: getInitNodeData(nodeID, type),
             };
-      
             addNode(newNode);
           }
         },
@@ -99,7 +96,6 @@ export const PipelineUI = () => {
     }, []);
 
     return (
-        <>
         <div ref={reactFlowWrapper} style={{width: '100%', height: '100%', position: 'absolute', top: 0, left: 0}}>
             <ReactFlow
                 nodes={nodes}
@@ -114,15 +110,23 @@ export const PipelineUI = () => {
                 edgeTypes={edgeTypes}
                 defaultEdgeOptions={{ type: 'draggable' }}
                 proOptions={proOptions}
+                snapToGrid
                 snapGrid={[gridSize, gridSize]}
                 connectionLineType='smoothstep'
+                fitView
+                fitViewOptions={{ padding: 0.2 }}
                 style={{ background: '#0f1117' }}
             >
                 <Background color="#1e2130" gap={gridSize} variant="dots" />
-                <Controls />
-                <MiniMap nodeColor="#252840" maskColor="rgba(15,17,23,0.75)" />
+                <Controls showInteractive={false} />
+                <MiniMap nodeColor="#252840" maskColor="rgba(15,17,23,0.75)" pannable zoomable />
             </ReactFlow>
         </div>
-        </>
     )
 }
+
+export const PipelineUI = () => (
+  <ReactFlowProvider>
+    <CanvasInner />
+  </ReactFlowProvider>
+);

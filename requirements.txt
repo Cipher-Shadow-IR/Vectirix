@@ -1,0 +1,3 @@
+# Vectirix - Python dependencies for Vercel Serverless Functions
+# These are available in Vercel's Python runtime by default,
+# but pinned here for reproducibility.

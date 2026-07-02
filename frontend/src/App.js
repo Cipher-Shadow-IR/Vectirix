@@ -1,12 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { PipelineToolbar } from './toolbar';
 import { PipelineUI } from './ui';
 import { SubmitButton } from './submit';
+import { ExportImport } from './components/ExportImport';
+import { PipelineTemplates } from './components/Templates';
+import { NotificationContainer, notifySuccess } from './components/Notification';
+import { useStore } from './store';
 
 function App() {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('theme') || 'dark';
   });
+
+  const loadPipeline = useStore((s) => s.loadPipeline);
+  const nodes = useStore((s) => s.nodes);
+  const edges = useStore((s) => s.edges);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
@@ -17,13 +25,28 @@ function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  const handleTemplateSelect = useCallback((tpl) => {
+    loadPipeline(tpl.nodes, tpl.edges);
+    notifySuccess(`Loaded "${tpl.name}" template`);
+  }, [loadPipeline]);
+
+  const handleImport = useCallback((importedNodes, importedEdges) => {
+    loadPipeline(importedNodes, importedEdges);
+    notifySuccess('Pipeline imported successfully');
+  }, [loadPipeline]);
+
   return (
     <div className="app-shell">
       <header className="app-header">
         <div className="app-header-logo">
           <img src="/Vectirix_logo.png" alt="Vectirix Logo" className="app-logo-img" />
           <h1>Vectirix</h1>
-          <span className="app-header-badge">Beta</span>
+          <span className="app-header-badge">v2</span>
+        </div>
+
+        <div className="app-header-actions">
+          <ExportImport nodes={nodes} edges={edges} onImport={handleImport} />
+          <PipelineTemplates onSelect={handleTemplateSelect} />
         </div>
 
         <div className="app-header-right">
@@ -80,6 +103,7 @@ function App() {
       <div className="submit-row">
         <SubmitButton />
       </div>
+      <NotificationContainer />
     </div>
   );
 }
