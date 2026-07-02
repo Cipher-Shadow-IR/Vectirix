@@ -54,7 +54,7 @@ export const SubmitButton = () => {
             </>
           ) : (
             <>
-              <span>\u25b6</span>
+              <span>▶</span>
               Analyze Pipeline
             </>
           )}
