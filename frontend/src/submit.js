@@ -3,7 +3,7 @@ import { useStore } from './store';
 import { analyzePipeline } from './api';
 import { notifySuccess } from './components/Notification';
 
-export const SubmitButton = () => {
+export const SubmitButton = ({ onAnalyze }) => {
   const nodes = useStore((state) => state.nodes);
   const edges = useStore((state) => state.edges);
   const clearPlayground = useStore((state) => state.clearPlayground);
@@ -15,6 +15,10 @@ export const SubmitButton = () => {
 
   const handleSubmit = async () => {
     if (loading) return;
+    if (onAnalyze) {
+      onAnalyze();
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

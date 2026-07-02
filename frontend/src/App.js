@@ -1,20 +1,28 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { PipelineToolbar } from './toolbar';
 import { PipelineUI } from './ui';
 import { SubmitButton } from './submit';
 import { ExportImport } from './components/ExportImport';
 import { PipelineTemplates } from './components/Templates';
 import { NotificationContainer, notifySuccess } from './components/Notification';
+import { ValidationPanel } from './components/ValidationPanel';
+import { SearchBar } from './components/SearchBar';
 import { useStore } from './store';
+import { analyzePipeline } from './api';
 
 function App() {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('theme') || 'dark';
   });
 
+  const [validationOpen, setValidationOpen] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+
   const loadPipeline = useStore((s) => s.loadPipeline);
+  const applyLayout = useStore((s) => s.applyLayout);
   const nodes = useStore((s) => s.nodes);
   const edges = useStore((s) => s.edges);
+  const pipelineRef = useRef(null);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
@@ -35,6 +43,28 @@ function App() {
     notifySuccess('Pipeline imported successfully');
   }, [loadPipeline]);
 
+  const handleAnalyze = useCallback(async () => {
+    try {
+      const result = await analyzePipeline(nodes, edges);
+      setAnalysisResult(result);
+      setValidationOpen(true);
+    } catch (err) {
+      setAnalysisResult(null);
+      setValidationOpen(true);
+    }
+  }, [nodes, edges]);
+
+  const handleSearch = useCallback((nodeId) => {
+    if (pipelineRef.current?.focusNode) {
+      pipelineRef.current.focusNode(nodeId);
+    }
+  }, []);
+
+  const handleLayout = useCallback((direction) => {
+    applyLayout(direction);
+    notifySuccess(`Applied ${direction} layout`);
+  }, [applyLayout]);
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -47,6 +77,24 @@ function App() {
         <div className="app-header-actions">
           <ExportImport nodes={nodes} edges={edges} onImport={handleImport} />
           <PipelineTemplates onSelect={handleTemplateSelect} />
+          <SearchBar onSearch={handleSearch} />
+        </div>
+
+        <div className="app-header-center">
+          <button className="btn-layout" onClick={() => handleLayout('vertical')} title="Vertical Layout">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <polyline points="19 12 12 19 5 12" />
+            </svg>
+            Layout
+          </button>
+          <button className="btn-layout" onClick={() => handleLayout('horizontal')} title="Horizontal Layout">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+            H-Layout
+          </button>
         </div>
 
         <div className="app-header-right">
@@ -98,10 +146,16 @@ function App() {
       </header>
       <PipelineToolbar />
       <div className="canvas-container">
-        <PipelineUI />
+        <PipelineUI ref={pipelineRef} />
+        {validationOpen && (
+          <ValidationPanel
+            analysisResult={analysisResult}
+            onClose={() => setValidationOpen(false)}
+          />
+        )}
       </div>
       <div className="submit-row">
-        <SubmitButton />
+        <SubmitButton onAnalyze={handleAnalyze} />
       </div>
       <NotificationContainer />
     </div>

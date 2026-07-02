@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import ReactFlow, { Controls, Background, MiniMap, ReactFlowProvider } from 'reactflow';
 import { useStore } from './store';
 import { shallow } from 'zustand/shallow';
@@ -44,7 +44,7 @@ const selector = (state) => ({
   onConnect: state.onConnect,
 });
 
-const CanvasInner = () => {
+const CanvasInner = forwardRef((props, ref) => {
     const reactFlowWrapper = useRef(null);
     const [reactFlowInstance, setReactFlowInstance] = useState(null);
     const {
@@ -58,6 +58,27 @@ const CanvasInner = () => {
     } = useStore(selector, shallow);
 
     useKeyboardShortcuts();
+
+    useImperativeHandle(ref, () => ({
+      focusNode: (nodeId) => {
+        if (!reactFlowInstance) return;
+        const node = nodes.find((n) => n.id === nodeId);
+        if (!node) return;
+        reactFlowInstance.setCenter(node.position.x + 100, node.position.y + 50, { zoom: 1.5, duration: 400 });
+        const updatedNodes = nodes.map((n) => ({
+          ...n,
+          selected: n.id === nodeId,
+          data: { ...n.data },
+        }));
+        useStore.getState().onNodesChange(
+          updatedNodes.filter((n) => n.selected).map((n) => ({
+            type: 'select',
+            id: n.id,
+            selected: true,
+          }))
+        );
+      },
+    }), [reactFlowInstance, nodes]);
 
     const getInitNodeData = (nodeID, type) => {
       return { id: nodeID, nodeType: type };
@@ -123,10 +144,10 @@ const CanvasInner = () => {
             </ReactFlow>
         </div>
     )
-}
+});
 
-export const PipelineUI = () => (
+export const PipelineUI = forwardRef((props, ref) => (
   <ReactFlowProvider>
-    <CanvasInner />
+    <CanvasInner ref={ref} />
   </ReactFlowProvider>
-);
+));

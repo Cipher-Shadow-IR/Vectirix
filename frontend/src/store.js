@@ -5,6 +5,7 @@ import {
     applyEdgeChanges,
     MarkerType,
 } from 'reactflow';
+import { autoLayout } from './utils/layout';
 
 const HISTORY_LIMIT = 50;
 const SAVE_KEY = 'vectirix-pipeline';
@@ -169,6 +170,14 @@ export const useStore = create((set, get) => {
         nodeIDs: newIDs,
         historyIndex: historyIndex + 1,
       });
+      get()._persist();
+    },
+
+    applyLayout: (direction = 'vertical') => {
+      const { nodes, edges } = get();
+      const laidOut = autoLayout(nodes, edges, direction);
+      set({ nodes: laidOut });
+      get()._saveToHistory();
       get()._persist();
     },
 
