@@ -30,6 +30,13 @@
   transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
+.base-node-icon {
+  font-size: 13px;
+  line-height: 1;
+  margin-right: 6px;
+  opacity: 0.7;
+}
+
 .base-node-title {
   font-size: 10px;
   font-weight: 700;
@@ -37,6 +44,29 @@
   text-transform: uppercase;
   letter-spacing: 0.8px;
   transition: color 0.25s ease;
+  flex: 1;
+}
+
+.base-node-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  z-index: 100;
+  box-shadow: var(--shadow-modal);
+  pointer-events: none;
+}
+
+.base-node:hover .base-node-tooltip {
+  display: block;
 }
 
 .base-node-delete-btn {

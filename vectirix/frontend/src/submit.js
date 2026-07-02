@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore } from './store';
 import { analyzePipeline } from './api';
-import { notifySuccess, notifyError } from './components/Notification';
+import { notifySuccess } from './components/Notification';
 
 export const SubmitButton = () => {
   const nodes = useStore((state) => state.nodes);
@@ -106,6 +106,12 @@ export const SubmitButton = () => {
                     <div className="modal-stat-row">
                       <span className="modal-stat-label">Disconnected</span>
                       <span className="modal-stat-value dag-no">{modalData.graph.disconnected_nodes.join(', ')}</span>
+                    </div>
+                  )}
+                  {modalData.graph.orphan_nodes && modalData.graph.orphan_nodes.length > 0 && (
+                    <div className="modal-stat-row">
+                      <span className="modal-stat-label">Orphan Nodes</span>
+                      <span className="modal-stat-value dag-no">{modalData.graph.orphan_nodes.join(', ')}</span>
                     </div>
                   )}
                 </div>

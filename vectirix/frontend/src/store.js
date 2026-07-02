@@ -8,6 +8,7 @@ import {
 
 const HISTORY_LIMIT = 50;
 const SAVE_KEY = 'vectirix-pipeline';
+const AUTO_SAVE_INTERVAL = 5000;
 
 function loadSavedPipeline() {
   try {
@@ -24,8 +25,16 @@ function loadSavedPipeline() {
   return null;
 }
 
+let autoSaveTimer = null;
+
 export const useStore = create((set, get) => {
   const saved = loadSavedPipeline();
+
+  if (typeof window !== 'undefined' && !autoSaveTimer) {
+    autoSaveTimer = setInterval(() => {
+      try { get()._persist(); } catch { /* ignore */ }
+    }, AUTO_SAVE_INTERVAL);
+  }
 
   return {
     nodes: saved?.nodes || [],

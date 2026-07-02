@@ -1,6 +1,6 @@
 # Vectirix
 
-Visual AI pipeline workflow builder. Design, analyze, and export complex data pipelines through an intuitive drag-and-drop interface.
+Visual AI pipeline workflow builder. Design, analyze, and export data pipelines through a drag-and-drop interface.
 
 ## Problem
 
@@ -29,14 +29,16 @@ vectirix/
 │   └── public/
 ├── vercel.json             # Vercel deployment config
 ├── requirements.txt        # Python dependencies
-└── runtime.txt             # Python version pinning
+└── README.md
 ```
+
+**Stack:** React 18, ReactFlow 11, Zustand, Vercel Python Serverless Functions, Vanilla CSS.
 
 ## Features
 
 - **Drag-and-drop canvas** with 9 node types
 - **Custom edges** with midpoint routing controls
-- **Graph analysis** — node count, edge count, DAG validation, cycle detection, entry/exit/disconnected nodes, max depth
+- **Graph analysis** — node count, edge count, DAG validation, cycle detection, entry/exit/disconnected/orphan nodes, max depth
 - **Undo/redo** (Ctrl+Z / Ctrl+Y)
 - **Keyboard shortcuts** — Delete (remove selected), Ctrl+D (duplicate), Ctrl+A (select all)
 - **Auto-save** — pipeline persists to localStorage every few seconds, restored on load
@@ -44,6 +46,7 @@ vectirix/
 - **Pipeline templates** — 7 pre-built templates (Chatbot, RAG, Summarizer, Translator, etc.)
 - **Dark/Light themes** — persistent toggle
 - **Resizable nodes** with validation and dynamic handles (Text node auto-detects variables)
+- **MiniMap, Controls, Background grid, Snap to grid**
 
 ## Installation
 
@@ -53,19 +56,19 @@ git clone https://github.com/Cipher-Shadow-IR/Vectirix.git
 cd Vectirix
 
 # Install frontend dependencies
-cd frontend && npm install
+cd vectirix/frontend && npm install
 
 # Start the development server
 npm start
 ```
 
-The app runs on `http://localhost:3000` and the API is at `/api` (proxied by Vercel CLI or the local dev setup).
+The app runs on `http://localhost:3000`. API calls use relative `/api` paths.
 
 ## Development
 
 ```bash
 # Frontend dev server with hot reload
-cd frontend && npm start
+cd vectirix/frontend && npm start
 
 # Run tests
 npm test
@@ -90,11 +93,7 @@ The entire application deploys to Vercel with a single connection.
 3. Set the root directory to `vectirix/`
 4. Deploy
 
-Vercel automatically detects the Python serverless functions (`api/*.py`) and the React build (`frontend/`).
-
-### Environment Variables (optional)
-
-No environment variables are required. All API calls use relative `/api` paths, which work identically in local development and production on Vercel.
+Vercel automatically detects the Python serverless functions (`api/*.py`) and the React build (`frontend/`). No environment variables required.
 
 ## API
 
@@ -103,6 +102,7 @@ No environment variables are required. All API calls use relative `/api` paths, 
 Analyze a pipeline graph.
 
 **Request body:**
+
 ```json
 {
   "nodes": [{ "id": "customInput-1", "type": "customInput" }],
@@ -111,11 +111,27 @@ Analyze a pipeline graph.
 ```
 
 **Response:**
+
 ```json
 {
-  "summary": { "num_nodes": 2, "num_edges": 1, "is_dag": true },
-  "graph": { "entry_nodes": ["customInput-1"], "exit_nodes": ["llm-1"], "disconnected_nodes": [], "max_depth": 1 },
-  "validation": { "warnings": [], "errors": [], "duplicate_edges": [], "invalid_connections": [] }
+  "summary": {
+    "num_nodes": 2,
+    "num_edges": 1,
+    "is_dag": true
+  },
+  "graph": {
+    "entry_nodes": ["customInput-1"],
+    "exit_nodes": ["llm-1"],
+    "disconnected_nodes": [],
+    "orphan_nodes": [],
+    "max_depth": 1
+  },
+  "validation": {
+    "warnings": [],
+    "errors": [],
+    "duplicate_edges": [],
+    "invalid_connections": []
+  }
 }
 ```
 
@@ -130,7 +146,6 @@ Returns `{"status": "healthy"}`.
 - [ ] Custom node SDK for third-party plugins
 - [ ] Execution engine to run pipelines server-side
 - [ ] Version history with diff view
-- [ ] Dark mode improvements and more themes
 
 ## License
 

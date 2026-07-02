@@ -103,8 +103,13 @@ def analyze_pipeline(nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]]) -
     warnings: List[str] = []
     errors: List[str] = []
 
-    disconnected = [n["id"] for n in nodes if n["id"] not in [e["source"] for e in edges] and n["id"] not in [e["target"] for e in edges]]
-    orphan_inputs = [n["id"] for n in nodes if n["type"] in ("customInput", "llm", "text", "customAPI", "customDatabase", "customCondition", "customTransform", "customNotification") and in_degree.get(n["id"], 0) == 0 and n["id"] not in entry_nodes]
+    all_source_ids = {e["source"] for e in edges}
+    all_target_ids = {e["target"] for e in edges}
+    disconnected = sorted(n["id"] for n in nodes if n["id"] not in all_source_ids and n["id"] not in all_target_ids)
+    orphan_nodes = sorted(n["id"] for n in nodes if n["id"] in all_source_ids and n["id"] not in all_target_ids and in_degree.get(n["id"], 0) > 0 and len(adj.get(n["id"], [])) == 0)
+    orphan_inputs = sorted(n["id"] for n in nodes if in_degree.get(n["id"], 0) == 0 and n["id"] not in entry_nodes)
+
+    self_loops = [f"{e['source']} -> {e['target']}" for e in edges if e.get("source") == e.get("target")]
 
     if disconnected:
         warnings.append(f"{len(disconnected)} disconnected node(s): {', '.join(disconnected)}")
@@ -112,12 +117,16 @@ def analyze_pipeline(nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]]) -
         warnings.append(f"{len(duplicate_edges)} duplicate edge(s) removed")
     if invalid_connections:
         errors.append(f"{len(invalid_connections)} invalid connection(s) found")
+    if self_loops:
+        warnings.append(f"{len(self_loops)} self-loop(s) detected: {', '.join(self_loops)}")
     if not entry_nodes and num_nodes > 0:
         warnings.append("No entry nodes found — graph may be cyclical")
     if num_nodes > 0 and num_edges == 0:
         warnings.append("Pipeline has nodes but no connections")
     if orphan_inputs:
-        warnings.append(f"{len(orphan_inputs)} node(s) have no inputs")
+        warnings.append(f"{len(orphan_inputs)} node(s) have no inputs: {', '.join(orphan_inputs)}")
+    if orphan_nodes:
+        warnings.append(f"{len(orphan_nodes)} orphan node(s) detected: {', '.join(orphan_nodes)}")
 
     return {
         "summary": {
@@ -126,15 +135,17 @@ def analyze_pipeline(nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]]) -
             "is_dag": not has_cycle
         },
         "graph": {
-            "entry_nodes": entry_nodes,
-            "exit_nodes": exit_nodes,
+            "entry_nodes": sorted(entry_nodes),
+            "exit_nodes": sorted(exit_nodes),
             "disconnected_nodes": disconnected,
+            "orphan_nodes": orphan_nodes,
             "max_depth": max_depth
         },
         "validation": {
             "warnings": warnings,
             "errors": errors,
             "duplicate_edges": duplicate_edges,
-            "invalid_connections": invalid_connections
+            "invalid_connections": invalid_connections,
+            "self_loops": self_loops
         }
     }
